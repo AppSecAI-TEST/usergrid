@@ -48,6 +48,8 @@ import org.apache.usergrid.services.ServicePayload;
 
 import com.fasterxml.jackson.jaxrs.json.annotation.JSONP;
 
+import java.util.Map;
+
 
 /**
  * A collection resource that stands before the Service Resource. If it cannot find
@@ -190,24 +192,38 @@ public class CollectionResource extends ServiceResource {
     }
 
 
-    // TODO: this can't be controlled and until it can be controlled we shouldn' allow muggles to do this.
-    // So system access only.
-    // TODO: use scheduler here to get around people sending a reindex call 30 times.
     @POST
     @Path("{itemName}/_reindex")
     @Produces({ MediaType.APPLICATION_JSON,"application/javascript"})
-    @RequireSystemAccess
+    @RequireApplicationAccess
     @JSONP
     public ApiResponse executePostForReindexing(
-        @Context UriInfo ui, String body,
+        @Context UriInfo ui, final Map<String, Object> payload,
         @PathParam("itemName") PathSegment itemName,
         @QueryParam("callback") @DefaultValue("callback") String callback ) throws Exception {
 
         addItemToServiceContext( ui, itemName );
 
         IndexResource indexResource = new IndexResource(injector);
-        return indexResource.rebuildIndexesPost(
+        return indexResource.rebuildIndexCollectionPost(payload,
             services.getApplicationId().toString(),itemName.getPath(),false,callback );
+    }
+
+    @GET
+    @Path("{itemName}/_reindex")
+    @Produces({ MediaType.APPLICATION_JSON,"application/javascript"})
+    @RequireApplicationAccess
+    @JSONP
+    public ApiResponse executeGetForReindexStatus(
+        @Context UriInfo ui, final Map<String, Object> payload,
+        @PathParam("itemName") PathSegment itemName,
+        @QueryParam("callback") @DefaultValue("callback") String callback ) throws Exception {
+
+        addItemToServiceContext( ui, itemName );
+
+        IndexResource indexResource = new IndexResource(injector);
+        return indexResource.rebuildIndexCollectionGet(services.getApplicationId().toString(), itemName.getPath(),
+            callback );
     }
 
 }
